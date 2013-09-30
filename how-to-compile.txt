@@ -1,3 +1,5 @@
+http://www.davideccher.com/blog/wordpress/building-librtmp-for-ios/
+
 mkdir openssl
 cd openssl
 curl http://www.openssl.org/source/openssl-1.0.1e.tar.gz -O openssl-1.0.1e.tar.gz
