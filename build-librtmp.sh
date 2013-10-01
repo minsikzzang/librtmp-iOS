@@ -111,6 +111,9 @@ done
 echo "Build universal library..."
 lipo -create ${CURRENTPATH}/bin/librtmp-iPhoneSimulator${SDKVERSION}-i386.sdk/lib/librtmp.a  ${CURRENTPATH}/bin/librtmp-iPhoneOS${SDKVERSION}-armv7.sdk/lib/librtmp.a ${CURRENTPATH}/bin/librtmp-iPhoneOS${SDKVERSION}-armv7s.sdk/lib/librtmp.a ${CURRENTPATH}/bin/librtmp-iPhoneOS${SDKVERSION}-arm64.sdk/lib/librtmp.a -output ${CURRENTPATH}/lib/librtmp.a
 
+mkdir -p ${CURRENTPATH}/include
+cp -R ${CURRENTPATH}/bin/librtmp-iPhoneSimulator${SDKVERSION}-i386.sdk/include/ ${CURRENTPATH}/include/
+
 echo "Building done."
 echo "Cleaning up..."
 
