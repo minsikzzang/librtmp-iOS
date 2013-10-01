@@ -1,10 +1,10 @@
 #!/bin/sh
 
-#  Automatic build script for libssl and libcrypto 
-#  for iPhoneOS and iPhoneSimulator
+#  build-librtmp.sh
+#  Automated librtmp build script for iPhoneOS and iPhoneSimulator
 #
-#  Created by Felix Schulze on 16.12.10.
-#  Copyright 2010 Felix Schulze. All rights reserved.
+#  Created by Min Kim on 10/1/13.
+#  Copyright (c) 2013 iFactory Lab Limited. All rights reserved.
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -19,21 +19,20 @@
 #  limitations under the License.
 #
 ###########################################################################
-#  Change values here													  #
-#																		  #
-VERSION="1.0.1e"													      #
-SDKVERSION="7.0"														  #
-#																		  #
+#  Change values here													                            #
+#																		                                      #
+SDKVERSION="7.0"														                              #
+#																		                                      #
 ###########################################################################
-#																		  #
-# Don't change anything under this line!								  #
-#																		  #
+#																		                                      #
+# Don't change anything under this line!								                  #
+#																		                                      #
 ###########################################################################
-
 
 CURRENTPATH=`pwd`
 ARCHS="i386 armv7 armv7s arm64"
 DEVELOPER=`xcode-select -print-path`
+LIBRTMPREPO="git://git.ffmpeg.org/rtmpdump"
 
 if [ ! -d "$DEVELOPER" ]; then
   echo "xcode path is not set correctly $DEVELOPER does not exist (most likely because of xcode > 4.3)"
@@ -44,65 +43,76 @@ if [ ! -d "$DEVELOPER" ]; then
   exit 1
 fi
 
+# Check whether openssl has already installed on the machine or not.
+# libcrypt.a / libssl.a
+
+LIBPATH="${CURRENTPATH}/lib"
+INCLUDEPATH="${CURRENTPATH}/include"
+
 set -e
-if [ ! -e openssl-${VERSION}.tar.gz ]; then
-	echo "Downloading openssl-${VERSION}.tar.gz"
-    curl -O http://www.openssl.org/source/openssl-${VERSION}.tar.gz
+echo 'Check openssl installation'
+if [ -f "${LIBPATH}/libcrypto.a" ] && [ -f "${LIBPATH}/libssl.a" ] && [ -d "${INCLUDEPATH}/openssl" ]; then
+  echo 'Openssl for iOS has already installed, no need to install openssl'
 else
-	echo "Using openssl-${VERSION}.tar.gz"
+  echo 'Openssl for iOS not found, will install openssl for iOS'
+  build-libssl.sh
+  echo 'Succeeded to install openssl'
 fi
 
-mkdir -p "${CURRENTPATH}/src"
-mkdir -p "${CURRENTPATH}/bin"
-mkdir -p "${CURRENTPATH}/lib"
+# Download librtmp source code from git repository
+# We assuem the user already installed git cloent.
+echo 'Clone librtmp git repository'
 
-tar zxf openssl-${VERSION}.tar.gz -C "${CURRENTPATH}/src"
-cd "${CURRENTPATH}/src/openssl-${VERSION}"
+# Remove the directory if already exist
+rm -rf "${CURRENTPATH}/rtmpdump"
 
+git clone ${LIBRTMPREPO} rtmpdump
+cd "${CURRENTPATH}/rtmpdump/librtmp"
 
 for ARCH in ${ARCHS}
 do
-	if [ "${ARCH}" == "i386" ];
-	then
-		PLATFORM="iPhoneSimulator"
-	else
-		sed -ie "s!static volatile sig_atomic_t intr_signal;!static volatile intr_signal;!" "crypto/ui/ui_openssl.c"
-		PLATFORM="iPhoneOS"
-	fi
+  if [ "${ARCH}" == "i386" ];
+  then
+  	PLATFORM="iPhoneSimulator"
+  else  
+  	PLATFORM="iPhoneOS"
+  fi
+  
+  export CROSS_TOP="${DEVELOPER}/Platforms/${PLATFORM}.platform/Developer"
+  export CROSS_SDK="${PLATFORM}${SDKVERSION}.sdk"
+  export BUILD_TOOLS="${DEVELOPER}"
+  
+  echo "Building librtmp for ${PLATFORM} ${SDKVERSION} ${ARCH}"
+	echo "Please wait..."
 	
-	export CROSS_TOP="${DEVELOPER}/Platforms/${PLATFORM}.platform/Developer"
-	export CROSS_SDK="${PLATFORM}${SDKVERSION}.sdk"
-	export BUILD_TOOLS="${DEVELOPER}"
-
-	echo "Building openssl-${VERSION} for ${PLATFORM} ${SDKVERSION} ${ARCH}"
-	echo "Please stand by..."
-
-	export CC="${BUILD_TOOLS}/usr/bin/gcc -arch ${ARCH}"
-	mkdir -p "${CURRENTPATH}/bin/${PLATFORM}${SDKVERSION}-${ARCH}.sdk"
-	LOG="${CURRENTPATH}/bin/${PLATFORM}${SDKVERSION}-${ARCH}.sdk/build-openssl-${VERSION}.log"
-
-    if [[ "$VERSION" =~ 1.0.0. ]]; then
-	    ./Configure BSD-generic32 --openssldir="${CURRENTPATH}/bin/${PLATFORM}${SDKVERSION}-${ARCH}.sdk" > "${LOG}" 2>&1
-    else
-	    ./Configure iphoneos-cross --openssldir="${CURRENTPATH}/bin/${PLATFORM}${SDKVERSION}-${ARCH}.sdk" > "${LOG}" 2>&1
-    fi
-
-	# add -isysroot to CC=
-	sed -ie "s!^CFLAG=!CFLAG=-isysroot ${CROSS_TOP}/Platforms/${PLATFORM}.platform/Developer/SDKs/${CROSS_SDK} -miphoneos-version-min=7.0 !" "Makefile"
-
-	make >> "${LOG}" 2>&1
-	make install >> "${LOG}" 2>&1
-	make clean >> "${LOG}" 2>&1
+	# add arch to CC=
+	sed -ie "s!AR=\$(CROSS_COMPILE)ar!AR=/usr/bin/ar!" "Makefile"
+	sed -ie "/CC=\$(CROSS_COMPILE)gcc/d" "Makefile"
+	echo "CC=\$(CROSS_COMPILE)gcc -arch ${ARCH}" >> "Makefile"
+  
+	export CROSS_COMPILE="${DEVELOPER}/usr/bin/"  
+  export XCFLAGS="-isysroot ${CROSS_TOP}/SDKs/${CROSS_SDK} -I${INCLUDEPATH} -arch ${ARCH}"
+      
+  if [ "${ARCH}" == "i386" ];
+  then
+  	export XLDFLAGS="-L${LIBPATH} -arch ${ARCH}"
+  else  
+  	export XLDFLAGS="-isysroot ${CROSS_TOP}/SDKs/${CROSS_SDK} -L${LIBPATH} -arch ${ARCH}"
+  fi
+  
+  mkdir -p "${CURRENTPATH}/bin/librtmp-${PLATFORM}${SDKVERSION}-${ARCH}.sdk"
+  LOG="${CURRENTPATH}/bin/librtmp-${PLATFORM}${SDKVERSION}-${ARCH}.sdk/build-librtmp.log"
+  
+  make SYS=darwin >> "${LOG}" 2>&1  
+  make SYS=darwin prefix="${CURRENTPATH}/bin/librtmp-${PLATFORM}${SDKVERSION}-${ARCH}.sdk" install  >> "${LOG}" 2>&1
+  make clean >> "${LOG}" 2>&1
 done
 
-echo "Build library..."
-lipo -create ${CURRENTPATH}/bin/iPhoneSimulator${SDKVERSION}-i386.sdk/lib/libssl.a  ${CURRENTPATH}/bin/iPhoneOS${SDKVERSION}-armv7.sdk/lib/libssl.a ${CURRENTPATH}/bin/iPhoneOS${SDKVERSION}-armv7s.sdk/lib/libssl.a ${CURRENTPATH}/bin/iPhoneOS${SDKVERSION}-arm64.sdk/lib/libssl.a -output ${CURRENTPATH}/lib/libssl.a
+echo "Build universal library..."
+lipo -create ${CURRENTPATH}/bin/librtmp-iPhoneSimulator${SDKVERSION}-i386.sdk/lib/librtmp.a  ${CURRENTPATH}/bin/librtmp-iPhoneOS${SDKVERSION}-armv7.sdk/lib/librtmp.a ${CURRENTPATH}/bin/librtmp-iPhoneOS${SDKVERSION}-armv7s.sdk/lib/librtmp.a ${CURRENTPATH}/bin/librtmp-iPhoneOS${SDKVERSION}-arm64.sdk/lib/librtmp.a -output ${CURRENTPATH}/lib/librtmp.a
 
-lipo -create ${CURRENTPATH}/bin/iPhoneSimulator${SDKVERSION}-i386.sdk/lib/libcrypto.a ${CURRENTPATH}/bin/iPhoneOS${SDKVERSION}-armv7.sdk/lib/libcrypto.a ${CURRENTPATH}/bin/iPhoneOS${SDKVERSION}-armv7s.sdk/lib/libcrypto.a ${CURRENTPATH}/bin/iPhoneOS${SDKVERSION}-arm64.sdk/lib/libcrypto.a -output ${CURRENTPATH}/lib/libcrypto.a
-
-mkdir -p ${CURRENTPATH}/include
-cp -R ${CURRENTPATH}/bin/iPhoneSimulator${SDKVERSION}-i386.sdk/include/openssl ${CURRENTPATH}/include/
 echo "Building done."
 echo "Cleaning up..."
-rm -rf ${CURRENTPATH}/src/openssl-${VERSION}
+
+rm -rf ${CURRENTPATH}/rtmpdump
 echo "Done."
