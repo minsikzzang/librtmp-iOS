@@ -86,8 +86,8 @@
 
 #if !(defined(VMS) || defined(__VMS)) /* VMS uses logical names instead */
 #if defined(HEADER_CRYPTLIB_H) && !defined(OPENSSLDIR)
-#define ENGINESDIR "/ifactory/experimentals/librtmp-iOS/bin/iPhoneSimulator7.0-i386.sdk/lib/engines"
-#define OPENSSLDIR "/ifactory/experimentals/librtmp-iOS/bin/iPhoneSimulator7.0-i386.sdk"
+#define ENGINESDIR "/livestation/benchmarks/librtmp-iOS/build/openssl-iPhoneSimulator7.0-i386.sdk/lib/engines"
+#define OPENSSLDIR "/livestation/benchmarks/librtmp-iOS/build/openssl-iPhoneSimulator7.0-i386.sdk"
 #endif
 #endif
 

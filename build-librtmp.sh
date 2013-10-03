@@ -31,8 +31,13 @@ SDKVERSION="7.0"														                              #
 
 CURRENTPATH=`pwd`
 ARCHS="i386 armv7 armv7s arm64"
-DEVELOPER=`xcode-select -print-path`
 LIBRTMPREPO="git://git.ffmpeg.org/rtmpdump"
+BUILDPATH="${CURRENTPATH}/build"
+LIBPATH="${CURRENTPATH}/lib"
+INCLUDEPATH="${CURRENTPATH}/include"
+SRCPATH="${CURRENTPATH}/src"
+LIBRTMP="librtmp.a"
+DEVELOPER=`xcode-select -print-path`
 
 if [ ! -d "$DEVELOPER" ]; then
   echo "xcode path is not set correctly $DEVELOPER does not exist (most likely because of xcode > 4.3)"
@@ -46,28 +51,27 @@ fi
 # Check whether openssl has already installed on the machine or not.
 # libcrypt.a / libssl.a
 
-LIBPATH="${CURRENTPATH}/lib"
-INCLUDEPATH="${CURRENTPATH}/include"
-
 set -e
 echo 'Check openssl installation'
 if [ -f "${LIBPATH}/libcrypto.a" ] && [ -f "${LIBPATH}/libssl.a" ] && [ -d "${INCLUDEPATH}/openssl" ]; then
   echo 'Openssl for iOS has already installed, no need to install openssl'
 else
   echo 'Openssl for iOS not found, will install openssl for iOS'
-  build-libssl.sh
+  ./build-libssl.sh
   echo 'Succeeded to install openssl'
 fi
 
 # Download librtmp source code from git repository
-# We assuem the user already installed git cloent.
+# We assuem the user already installed git client.
 echo 'Clone librtmp git repository'
 
 # Remove the directory if already exist
-rm -rf "${CURRENTPATH}/rtmpdump"
+rm -rf "${SRCPATH}/rtmpdump"
 
-git clone ${LIBRTMPREPO} rtmpdump
-cd "${CURRENTPATH}/rtmpdump/librtmp"
+git clone ${LIBRTMPREPO} src/rtmpdump
+cd "${SRCPATH}/rtmpdump/librtmp"
+
+LIBRTMP_REPO=""
 
 for ARCH in ${ARCHS}
 do
@@ -91,31 +95,34 @@ do
 	echo "CC=\$(CROSS_COMPILE)gcc -arch ${ARCH}" >> "Makefile"
   
 	export CROSS_COMPILE="${DEVELOPER}/usr/bin/"  
-  export XCFLAGS="-isysroot ${CROSS_TOP}/SDKs/${CROSS_SDK} -I${INCLUDEPATH} -arch ${ARCH}"
+  export XCFLAGS="-isysroot ${CROSS_TOP}/SDKs/${CROSS_SDK} -miphoneos-version-min=7.0 -I${INCLUDEPATH} -arch ${ARCH}"
       
   if [ "${ARCH}" == "i386" ];
   then
   	export XLDFLAGS="-L${LIBPATH} -arch ${ARCH}"
-  else  
-  	export XLDFLAGS="-isysroot ${CROSS_TOP}/SDKs/${CROSS_SDK} -L${LIBPATH} -arch ${ARCH}"
+  else
+  	export XLDFLAGS="-isysroot ${CROSS_TOP}/SDKs/${CROSS_SDK} -miphoneos-version-min=7.0 -L${LIBPATH} -arch ${ARCH}"
   fi
   
-  mkdir -p "${CURRENTPATH}/bin/librtmp-${PLATFORM}${SDKVERSION}-${ARCH}.sdk"
-  LOG="${CURRENTPATH}/bin/librtmp-${PLATFORM}${SDKVERSION}-${ARCH}.sdk/build-librtmp.log"
+  OUTPATH="${BUILDPATH}/librtmp-${PLATFORM}${SDKVERSION}-${ARCH}.sdk"
+  mkdir -p "${OUTPATH}"
+  LOG="${OUTPATH}/build-librtmp.log"
   
   make SYS=darwin >> "${LOG}" 2>&1  
-  make SYS=darwin prefix="${CURRENTPATH}/bin/librtmp-${PLATFORM}${SDKVERSION}-${ARCH}.sdk" install  >> "${LOG}" 2>&1
+  make SYS=darwin prefix="${OUTPATH}" install  >> "${LOG}" 2>&1
   make clean >> "${LOG}" 2>&1
+  
+  LIBRTMP_REPO+="${OUTPATH}/lib/${LIBRTMP} "
 done
 
 echo "Build universal library..."
-lipo -create ${CURRENTPATH}/bin/librtmp-iPhoneSimulator${SDKVERSION}-i386.sdk/lib/librtmp.a  ${CURRENTPATH}/bin/librtmp-iPhoneOS${SDKVERSION}-armv7.sdk/lib/librtmp.a ${CURRENTPATH}/bin/librtmp-iPhoneOS${SDKVERSION}-armv7s.sdk/lib/librtmp.a ${CURRENTPATH}/bin/librtmp-iPhoneOS${SDKVERSION}-arm64.sdk/lib/librtmp.a -output ${CURRENTPATH}/lib/librtmp.a
+lipo -create ${LIBRTMP_REPO}-output ${LIBPATH}/${LIBRTMP}
 
-mkdir -p ${CURRENTPATH}/include
-cp -R ${CURRENTPATH}/bin/librtmp-iPhoneSimulator${SDKVERSION}-i386.sdk/include/ ${CURRENTPATH}/include/
+mkdir -p ${INCLUDEPATH}
+cp -R ${BUILDPATH}/librtmp-iPhoneSimulator${SDKVERSION}-i386.sdk/include/ ${INCLUDEPATH}/
 
 echo "Building done."
 echo "Cleaning up..."
 
-rm -rf ${CURRENTPATH}/rtmpdump
+rm -rf ${SRCPATH}/rtmpdump
 echo "Done."
