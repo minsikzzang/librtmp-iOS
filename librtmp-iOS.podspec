@@ -11,7 +11,7 @@ Pod::Spec.new do |s|
   s.ios.deployment_target = '6.0'
   s.osx.deployment_target = '10.8'
 
-  s.public_header_files = 'include/*'
+  s.public_header_files = 'include/**'
   
   s.vendored_libraries = 'lib/libcrypto.a', 'lib/libssl.a', 'lib/librtmp.a'
     s.libraries = 'ssl', 'crypto', 'rtmp'
