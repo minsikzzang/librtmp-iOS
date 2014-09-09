@@ -21,7 +21,7 @@
 ###########################################################################
 #  Change values here													                            #
 #																		                                      #
-SDKVERSION="7.0"														                              #
+SDKVERSION="7.1"														                              #
 #																		                                      #
 ###########################################################################
 #																		                                      #
@@ -30,7 +30,7 @@ SDKVERSION="7.0"														                              #
 ###########################################################################
 
 CURRENTPATH=`pwd`
-ARCHS="i386 armv7 armv7s arm64"
+ARCHS="i386 x86_64 armv7 armv7s arm64"
 LIBRTMPREPO="git://git.ffmpeg.org/rtmpdump"
 BUILDPATH="${CURRENTPATH}/build"
 LIBPATH="${CURRENTPATH}/lib"
@@ -75,7 +75,7 @@ LIBRTMP_REPO=""
 
 for ARCH in ${ARCHS}
 do
-  if [ "${ARCH}" == "i386" ];
+  if [ "${ARCH}" == "i386" ] || [ "${ARCH}" == "x86_64" ];
   then
   	PLATFORM="iPhoneSimulator"
   else  
@@ -97,7 +97,7 @@ do
 	export CROSS_COMPILE="${DEVELOPER}/usr/bin/"  
   export XCFLAGS="-isysroot ${CROSS_TOP}/SDKs/${CROSS_SDK} -miphoneos-version-min=7.0 -I${INCLUDEPATH} -arch ${ARCH}"
       
-  if [ "${ARCH}" == "i386" ];
+  if [ "${ARCH}" == "i386" ] || [ "${ARCH}" == "x86_64" ];
   then
   	export XLDFLAGS="-L${LIBPATH} -arch ${ARCH}"
   else

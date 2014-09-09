@@ -41,6 +41,9 @@
 #ifndef OPENSSL_THREADS
 # define OPENSSL_THREADS
 #endif
+#ifndef OPENSSL_NO_ASM
+# define OPENSSL_NO_ASM
+#endif
 #ifndef OPENSSL_NO_DYNAMIC_ENGINE
 # define OPENSSL_NO_DYNAMIC_ENGINE
 #endif
@@ -86,8 +89,8 @@
 
 #if !(defined(VMS) || defined(__VMS)) /* VMS uses logical names instead */
 #if defined(HEADER_CRYPTLIB_H) && !defined(OPENSSLDIR)
-#define ENGINESDIR "/livestation/benchmarks/librtmp-iOS/build/openssl-iPhoneSimulator7.0-i386.sdk/lib/engines"
-#define OPENSSLDIR "/livestation/benchmarks/librtmp-iOS/build/openssl-iPhoneSimulator7.0-i386.sdk"
+#define ENGINESDIR "/Users/ashleysampson/Source/Livestation/librtmp-iOS/build/openssl-iPhoneSimulator7.1-i386.sdk/lib/engines"
+#define OPENSSLDIR "/Users/ashleysampson/Source/Livestation/librtmp-iOS/build/openssl-iPhoneSimulator7.1-i386.sdk"
 #endif
 #endif
 

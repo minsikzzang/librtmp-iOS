@@ -39,7 +39,7 @@
 #  Change values here													                            #
 #																	                                    	  #
 VERSION="1.0.1e"													                                #
-SDKVERSION="7.0"														                              #
+SDKVERSION="7.1"														                              #
 #																		                                      #
 ###########################################################################
 #																		                                      #
@@ -48,7 +48,7 @@ SDKVERSION="7.0"														                              #
 ###########################################################################
 
 CURRENTPATH=`pwd`
-ARCHS="i386 armv7 armv7s arm64"
+ARCHS="i386 x86_64 armv7 armv7s arm64"
 BUILDPATH="${CURRENTPATH}/build"
 LIBPATH="${CURRENTPATH}/lib"
 INCLUDEPATH="${CURRENTPATH}/include"
@@ -90,7 +90,7 @@ LIBCRYPTO_REPO=""
 
 for ARCH in ${ARCHS}
 do
-	if [ "${ARCH}" == "i386" ];
+	if [ "${ARCH}" == "i386" ]|| [ "${ARCH}" == "x86_64" ];
 	then
 		PLATFORM="iPhoneSimulator"
 	else
@@ -114,7 +114,7 @@ do
   if [[ "$VERSION" =~ 1.0.0. ]]; then
 	  ./Configure BSD-generic32 --openssldir="${OUTPATH}" > "${LOG}" 2>&1
   else
-	  ./Configure iphoneos-cross --openssldir="${OUTPATH}" > "${LOG}" 2>&1
+	  ./Configure iphoneos-cross no-asm --openssldir="${OUTPATH}" > "${LOG}" 2>&1
   fi
 
 	# add -isysroot to CC=
